@@ -10,9 +10,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var jwtAud = builder.Configuration.GetSection("Jwt:Audience").Get<string>();
-var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Get<string>();
-var jwtKey = builder.Configuration.GetSection("Jwt:Key").Get<string>();
+var jwtAud = builder.Configuration.GetSection("Jwt:Audience").Value;
+var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value;
+var jwtKey = builder.Configuration.GetSection("Jwt:Key").Value;
 
 var connectionString = builder.Configuration.GetConnectionString("Database");
 

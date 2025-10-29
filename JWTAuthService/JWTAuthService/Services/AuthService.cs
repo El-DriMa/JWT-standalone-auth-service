@@ -27,7 +27,13 @@ namespace JWTAuthService.Services
         public static string GenerateJwtToken(Users user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("bc4cb666fb5816f66b3c463d4f3ed80f");
+
+            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: true, reloadOnChange: true).Build();
+            var jwtAud = config.GetSection("Jwt:Audience").Value;
+            var jwtIssuer = config.GetSection("Jwt:Issuer").Value;
+            var jwtKey = config.GetSection("Jwt:Key").Value;
+
+            var key = Encoding.ASCII.GetBytes(jwtKey!);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -38,8 +44,8 @@ namespace JWTAuthService.Services
                 ]),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                Audience = "https://localhost:7284/",
-                Issuer = "https://localhost:7284/"
+                Audience = jwtAud,
+                Issuer = jwtIssuer,
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
