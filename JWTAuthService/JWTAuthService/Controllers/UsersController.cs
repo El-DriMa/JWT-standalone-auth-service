@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace JWTAuthService.Controllers
 {
-    [Authorize]
+    [Authorize(Roles="Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : BaseCRUDController<UserResponse, UserSearchObject, UserInsertRequest, UserUpdateRequest>
