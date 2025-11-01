@@ -7,8 +7,26 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MapsterMapper;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRateLimiter(_ =>
+{
+    _.AddFixedWindowLimiter(policyName: "fixed", options =>
+        {
+            options.PermitLimit = 5;
+            options.Window = TimeSpan.FromSeconds(60);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 2;
+        });
+    _.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync("Too many requests - Try Later");
+    };
+ });
 
 var jwtAud = builder.Configuration.GetSection("Jwt:Audience").Value;
 var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value;
@@ -82,6 +100,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

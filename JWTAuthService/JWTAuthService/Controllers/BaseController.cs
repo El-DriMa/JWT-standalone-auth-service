@@ -21,13 +21,13 @@ namespace JWTAuthService.Controllers
         }
 
         [HttpGet("")]
-        public async Task<PagedResult<TModel>> GetList([FromQuery] TSearch searchObject)
+        public virtual async Task<PagedResult<TModel>> GetList([FromQuery] TSearch searchObject)
         {
             return await _service.GetPaged(searchObject);
         }
 
         [HttpGet("{id}")]
-        public async Task<TModel?> GetById(int id)
+        public virtual async Task<TModel?> GetById(int id)
         {
             return await _service.GetById(id);
         }

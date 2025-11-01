@@ -11,12 +11,15 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Identity.Client;
 
 namespace JWTAuthService.Controllers
 {
-    [Authorize(Roles="Admin")]
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+  //  [Authorize(Roles = "Admin")]
+  //  [EnableRateLimiting("fixed")]
     public class UserController : BaseCRUDController<UserResponse, UserSearchObject, UserInsertRequest, UserUpdateRequest>
     {
         private readonly MyDatabaseContext _context;
@@ -27,7 +30,6 @@ namespace JWTAuthService.Controllers
             _mapper = mapper;
         }
 
-       
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, [FromServices] IUserService userService)
         {
@@ -45,6 +47,28 @@ namespace JWTAuthService.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet]
+        [EnableRateLimiting("fixed")]
+        public override async Task<PagedResult<UserResponse>> GetList(UserSearchObject search)
+        {
+            var result= await _service.GetPaged(search);
+            return result;
+        }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        public override async Task<IActionResult> Delete(int id)
+        {
+            var result = await _service.Delete(id); 
+
+            if (!result)
+                return NotFound();
+
+            return NoContent();
+        }
+
 
     }
 
