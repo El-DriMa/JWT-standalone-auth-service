@@ -13,6 +13,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Identity.Client;
+using StackExchange.Redis;
+using Newtonsoft.Json;
 
 namespace JWTAuthService.Controllers
 {
@@ -24,10 +26,12 @@ namespace JWTAuthService.Controllers
     {
         private readonly MyDatabaseContext _context;
         private readonly IMapper _mapper;
-        public UserController(ILogger<BaseController<UserResponse, UserSearchObject>> logger, IUserService service, MyDatabaseContext context, IMapper mapper) : base(logger, service)
+        private readonly IConnectionMultiplexer _connectionMultiplexer;
+        public UserController(ILogger<BaseController<UserResponse, UserSearchObject>> logger, IUserService service, MyDatabaseContext context, IMapper mapper, IConnectionMultiplexer connectionMultiplexer) : base(logger, service)
         {
             _context = context;
             _mapper = mapper;
+            _connectionMultiplexer = connectionMultiplexer;
         }
 
         [HttpPost("change-password")]
@@ -52,7 +56,19 @@ namespace JWTAuthService.Controllers
         [EnableRateLimiting("fixed")]
         public override async Task<PagedResult<UserResponse>> GetList(UserSearchObject search)
         {
+            var db = _connectionMultiplexer.GetDatabase();
+            string cacheKey = $"users:{search.Page}:{search.PageSize}";
+            var cachedData = await db.StringGetAsync(cacheKey);
+            if (!cachedData.IsNull)
+            {
+                var cachedResult = JsonConvert.DeserializeObject<PagedResult<UserResponse>>(cachedData);
+                return cachedResult!;
+            }
+
             var result= await _service.GetPaged(search);
+
+            await db.StringSetAsync(cacheKey, JsonConvert.SerializeObject(result), TimeSpan.FromMinutes(5));
+
             return result;
         }
 

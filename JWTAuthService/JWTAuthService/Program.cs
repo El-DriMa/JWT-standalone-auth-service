@@ -9,6 +9,7 @@ using MapsterMapper;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,6 +100,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+RegisterRedisCache(builder);
+
 var app = builder.Build();
 
 app.UseRateLimiter();
@@ -118,3 +121,10 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static void RegisterRedisCache(WebApplicationBuilder builder)
+{
+    var redisConnectionString = builder.Configuration.GetSection("RedisConnectionString");
+    var multiplexer = ConnectionMultiplexer.Connect(redisConnectionString.Value);
+    builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+}
