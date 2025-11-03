@@ -10,8 +10,19 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using StackExchange.Redis;
+using Prometheus;
+using Serilog;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()                       
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day) 
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddRateLimiter(_ =>
 {
@@ -104,6 +115,8 @@ RegisterRedisCache(builder);
 
 var app = builder.Build();
 
+app.UseHttpMetrics();
+
 app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
@@ -118,7 +131,9 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapMetrics();
 app.MapControllers();
+
 
 app.Run();
 

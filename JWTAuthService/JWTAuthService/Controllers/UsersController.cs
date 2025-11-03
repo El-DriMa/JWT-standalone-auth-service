@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Identity.Client;
 using StackExchange.Redis;
 using Newtonsoft.Json;
+using Prometheus;
+using Metrics = Prometheus.Metrics;
 
 namespace JWTAuthService.Controllers
 {
@@ -27,6 +29,8 @@ namespace JWTAuthService.Controllers
         private readonly MyDatabaseContext _context;
         private readonly IMapper _mapper;
         private readonly IConnectionMultiplexer _connectionMultiplexer;
+        private static readonly Counter PasswordChanges = Metrics
+             .CreateCounter("user_password_changes_total", "Number of passowrd changes");
         public UserController(ILogger<BaseController<UserResponse, UserSearchObject>> logger, IUserService service, MyDatabaseContext context, IMapper mapper, IConnectionMultiplexer connectionMultiplexer) : base(logger, service)
         {
             _context = context;
@@ -41,9 +45,12 @@ namespace JWTAuthService.Controllers
             if (!int.TryParse(userIdStr, out int userId))
                 return Unauthorized();
 
+            _logger.LogInformation("User {UserId} requested password change", userId);
+
             try
             {
                 await userService.ChangePassword(userId, request);
+                PasswordChanges.Inc();
                 return Ok("Password has been changed successfully");
             }
             catch (ValidationException ex)
