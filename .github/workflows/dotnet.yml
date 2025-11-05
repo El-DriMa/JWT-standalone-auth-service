@@ -21,8 +21,11 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Restore dependencies
+      working-directory: JWTAuthService
       run: dotnet restore
     - name: Build
+      working-directory: JWTAuthService
       run: dotnet build --no-restore
     - name: Test
+      working-directory: JWTAuthService
       run: dotnet test --no-build --verbosity normal
